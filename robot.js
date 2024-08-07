@@ -125,6 +125,19 @@ function routeRobot(state, memory) {
 
 //runRobot(VillageState.random(), routeRobot, []);
 
+function runRobot(state, robot, memory) {
+	for (let turn = 0; ; turn++) {
+		if (state.parcels.length == 0) {
+			console.log(`Done in ${turn} turns`);
+			break;
+		}
+		let action = robot(state, memory); //Initializes the robot with the state and memory
+		state = state.move(action.direction);
+		memory = action.memory; //Adds memory to the robot object {direction: 'x', memory: 'y'}
+		console.log(`Moved to ${action.direction}`);
+	}
+}
+
 function findRoute(graph, from, to) {
 	let work = [{ at: from, route: [] }];
 	for (let i = 0; i < work.length; i++) {
@@ -151,7 +164,7 @@ function goalOrientedRobot({ place, parcels }, route) {
 	return { direction: route[0], memory: route.slice(1) };
 }
 
-runRobot(VillageState.random(), goalOrientedRobot, []);
+//runRobot(VillageState.random(), goalOrientedRobot, []);
 
 function compareRobots(robot1, memory1, robot2, memory2) {
 	function runRobot(state, robot, memory) {
@@ -185,16 +198,17 @@ compareRobots(routeRobot, [], goalOrientedRobot, []);
 
 function myRobot({ place, parcels }, route) {
 	if (route.length == 0) {
-		const calcParcels = [];
-		const listParcels = [];
-		let i = 0;
+		let allRoutes = [];
 		for (p of parcels) {
-			let r = findRoute(roadGraph, place, p.place);
-			calcParcels.push(r);
-			listParcels.push(p);
+			if (p.place != place) {
+				// verify if parcel is at the same place where the robot's at
+				route = findRoute(roadGraph, place, p.place); //if parcel is not picked then find a route to it
+			} else {
+				route = findRoute(roadGraph, place, p.address); //if the parcel is picked then find a route to it's address
+			}
+			allRoutes.push(route);
 		}
-
-		calcParcels.sort((a, b) => {
+		allRoutes.sort((a, b) => {
 			if (a.length > b.length) {
 				return 1;
 			} else if (a.length < b.length) {
@@ -203,19 +217,14 @@ function myRobot({ place, parcels }, route) {
 				return 0;
 			}
 		});
-
-		let parcel = calcParcels[0];
-		if (parcel.place != place) {
-			// verify if parcel is at the same place where the robot's at
-			route = findRoute(roadGraph, place, parcel.place); //if parcel is not picked then find a route to it
-		} else {
-			route = findRoute(roadGraph, place, parcel.address); //if the parcel is picked then find a route to it's address
-		}
+		route = allRoutes[0];
 	}
 	return { direction: route[0], memory: route.slice(1) };
 }
 
-//runRobot(VillageState.random(), myRobot, []);
+runRobot(VillageState.random(), myRobot, []);
+
+//compareRobots(myRobot, [], goalOrientedRobot, []);
 
 // .sort((a, b) => {
 // 	if (a.length > b.length) {
